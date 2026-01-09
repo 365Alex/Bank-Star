@@ -16,10 +16,13 @@ public class RecommendationResponse{
         this.recommendations = recommendations;
     }
 
-    public String getUserId() { return userId; }
-    public void setUserId(String userId) { this.userId = userId; }
+    public String getUserId() {
+        return userId; }
+    public void setUserId(String userId) {
+        this.userId = userId; }
 
-    public List<ProductRecommendation> getRecommendations() { return recommendations; }
+    public List<ProductRecommendation> getRecommendations() {
+        return recommendations; }
     public void setRecommendations(List<ProductRecommendation> recommendations) {
         this.recommendations = recommendations;
     }

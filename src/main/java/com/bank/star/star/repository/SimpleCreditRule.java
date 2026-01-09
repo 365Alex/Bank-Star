@@ -40,7 +40,6 @@ public class SimpleCreditRule implements RecommendationRuleSet{
         if (!condition3) {
             return Optional.empty();
         }
-
         return Optional.of(new ProductRecommendation(PRODUCT_NAME, PRODUCT_ID, DESCRIPTION));
     }
 }

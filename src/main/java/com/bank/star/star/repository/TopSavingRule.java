@@ -39,9 +39,7 @@ public class TopSavingRule implements RecommendationRuleSet{
 
         // Правило 3: Сумма пополнений по DEBIT больше суммы трат по DEBIT
         boolean condition3 = totalDebitDeposits.compareTo(totalDebitExpenses) > 0;
-        if (!condition3) {
-            return Optional.empty();
-        }
+        if (!condition3) {return Optional.empty();}
 
         return Optional.of(new ProductRecommendation(PRODUCT_NAME, PRODUCT_ID, DESCRIPTION));
     }

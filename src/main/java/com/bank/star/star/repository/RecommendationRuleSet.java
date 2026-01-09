@@ -6,5 +6,5 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface RecommendationRuleSet {
-    Optional<ProductRecommendation> check(UUID userId);
+    Optional<ProductRecommendation> check (UUID userId);
 }

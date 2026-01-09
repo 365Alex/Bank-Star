@@ -67,7 +67,6 @@ public class TransactionRepository {
               AND p.type = ? 
               AND t.type = 'EXPENSE'
             """;
-
         BigDecimal result = jdbcTemplate.queryForObject(sql, BigDecimal.class, userId, productType);
         return result != null ? result : BigDecimal.ZERO;
     }

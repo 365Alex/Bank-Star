@@ -21,9 +21,7 @@ public class Invest500Rule implements RecommendationRuleSet{
     public Optional<ProductRecommendation> check(UUID userId) {
         // Правило 1: Пользователь использует как минимум один продукт с типом DEBIT
         boolean usesDebit = transactionRepository.usesProductType(userId, "DEBIT");
-        if (!usesDebit) {
-            return Optional.empty();
-        }
+        if (!usesDebit) {return Optional.empty();}
 
         // Правило 2: Пользователь не использует продукты с типом INVEST
         boolean usesInvest = transactionRepository.usesProductType(userId, "INVEST");
@@ -33,9 +31,7 @@ public class Invest500Rule implements RecommendationRuleSet{
 
         // Правило 3: Сумма пополнений продуктов с типом SAVING больше 1000 ₽
         BigDecimal totalSavingDeposits = transactionRepository.getTotalSavingDeposits(userId);
-        if (totalSavingDeposits.compareTo(new BigDecimal("1000")) <= 0) {
-            return Optional.empty();
-        }
+        if (totalSavingDeposits.compareTo(new BigDecimal("1000")) <= 0) {return Optional.empty();}
 
         // Все правила выполнены
         return Optional.of(new ProductRecommendation(PRODUCT_NAME, PRODUCT_ID, DESCRIPTION));
