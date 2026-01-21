@@ -1,9 +1,9 @@
 package com.bank.star.star.repository;
 
+import com.bank.star.star.entity.ProductType;
+import com.bank.star.star.entity.TransactionType;
 import org.springframework.stereotype.Repository;
 import org.springframework.jdbc.core.JdbcTemplate;
-
-import java.math.BigDecimal;
 import java.util.UUID;
 
 @Repository
@@ -18,77 +18,92 @@ public class TransactionRepository {
     /**
      * Проверяет, использует ли пользователь продукты определенного типа
      */
-    public boolean usesProductType(UUID userId, String productType) {
+    public boolean hasProduct(UUID userId, ProductType productType) {
         String sql = """
-            SELECT COUNT(*) > 0 
-            FROM transaction t
-            JOIN product p ON t.product_id = p.id
-            WHERE t.user_id = ? AND p.type = ?
-            LIMIT 1
-            """;
-
-        Boolean result = jdbcTemplate.queryForObject(sql, Boolean.class, userId, productType);
-        return result != null && result;
-    }
-
-    /**
-     * Проверяет, НЕ использует ли пользователь продукты определенного типа
-     */
-    public boolean doesNotUseProductType(UUID userId, String productType) {
-        return !usesProductType(userId, productType);
-    }
-
-    /**
-     * Сумма пополнений по всем продуктам определенного типа
-     */
-    public BigDecimal getTotalDepositsByProductType(UUID userId, String productType) {
-        String sql = """
-            SELECT COALESCE(SUM(t.amount), 0)
+            SELECT COUNT(*) > 0
             FROM transaction t
             JOIN product p ON t.product_id = p.id
             WHERE t.user_id = ? 
               AND p.type = ? 
-              AND t.type = 'DEPOSIT'
             """;
 
-        BigDecimal result = jdbcTemplate.queryForObject(sql, BigDecimal.class, userId, productType);
-        return result != null ? result : BigDecimal.ZERO;
+        Boolean result = jdbcTemplate.queryForObject(
+                sql,
+                Boolean.class,
+                userId,
+                productType.toString()
+        );
+        return Boolean.TRUE.equals(result);
     }
 
     /**
-     * Сумма трат по всем продуктам определенного типа
+     * Получает сумму транзакций определенного типа для определенного типа продукта
+     * @return сумма в копейках
      */
-    public BigDecimal getTotalExpensesByProductType(UUID userId, String productType) {
+    public long getTransactionSum(UUID userId, ProductType productType, TransactionType transactionType) {
         String sql = """
             SELECT COALESCE(SUM(t.amount), 0)
             FROM transaction t
             JOIN product p ON t.product_id = p.id
-            WHERE t.user_id = ? 
-              AND p.type = ? 
-              AND t.type = 'EXPENSE'
+            WHERE t.user_id = ?
+              AND p.type = ?
+              AND t.type = ?
             """;
-        BigDecimal result = jdbcTemplate.queryForObject(sql, BigDecimal.class, userId, productType);
-        return result != null ? result : BigDecimal.ZERO;
+
+        Long result = jdbcTemplate.queryForObject(
+                sql,
+                Long.class,
+                userId,
+                productType.toString(),
+                transactionType.toString()
+        );
+        return result != null ? result : 0L;
     }
 
     /**
-     * Получает общую сумму пополнений по продуктам типа SAVING
+     * Сравнивает сумму двух типов транзакций
+     * возвращает true если сумма первых транзакций больше суммы вторых транзакций
      */
-    public BigDecimal getTotalSavingDeposits(UUID userId) {
-        return getTotalDepositsByProductType(userId, "SAVING");
+    public boolean compareTransactionSums(UUID userId,
+                                          ProductType productType1, TransactionType transactionType1,
+                                          ProductType productType2, TransactionType transactionType2) {
+        long sum1 = getTransactionSum(userId, productType1, transactionType1);
+        long sum2 = getTransactionSum(userId, productType2, transactionType2);
+        return sum1 > sum2;
     }
 
     /**
-     * Получает общую сумму пополнений по продуктам типа DEBIT
+     * Проверяет, что сумма транзакций превышает порог
+     * @param threshold порог в рублях (автоматически преобразуется в копейки)
      */
-    public BigDecimal getTotalDebitDeposits(UUID userId) {
-        return getTotalDepositsByProductType(userId, "DEBIT");
+    public boolean transactionSumCompare(UUID userId, int threshold,
+                                         ProductType productType, TransactionType transactionType) {
+        long sumInKopecks = getTransactionSum(userId, productType, transactionType);
+        long thresholdInKopecks = threshold * 100L; // конвертируем рубли в копейки
+        return sumInKopecks > thresholdInKopecks;
     }
 
     /**
-     * Получает общую сумму трат по продуктам типа DEBIT
+     * Проверяет, что сумма транзакций больше или равна порогу
      */
-    public BigDecimal getTotalDebitExpenses(UUID userId) {
-        return getTotalExpensesByProductType(userId, "DEBIT");
+    public boolean transactionSumGreaterOrEqual(UUID userId, int threshold,
+                                                ProductType productType, TransactionType transactionType) {
+        long sumInKopecks = getTransactionSum(userId, productType, transactionType);
+        long thresholdInKopecks = threshold * 100L;
+        return sumInKopecks >= thresholdInKopecks;
+    }
+
+    /**
+     * Получает сумму пополнений для определенного типа продукта
+     */
+    public long getDepositSum(UUID userId, ProductType productType) {
+        return getTransactionSum(userId, productType, TransactionType.DEPOSIT);
+    }
+
+    /**
+     * Получает сумму снятий для определенного типа продукта
+     */
+    public long getWithdrawSum(UUID userId, ProductType productType) {
+        return getTransactionSum(userId, productType, TransactionType.WITHDRAW);
     }
 }
