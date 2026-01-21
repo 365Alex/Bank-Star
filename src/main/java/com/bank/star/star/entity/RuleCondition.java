@@ -1,10 +1,7 @@
-package com.bank.star.star.model;
+package com.bank.star.star.entity;
 
 
-
-import com.bank.star.star.entity.QueryType;
 import jakarta.persistence.*;
-import org.springframework.data.annotation.Id;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,25 +9,29 @@ import java.util.List;
 @Entity
 @Table(name = "rule_conditions")
 public class RuleCondition {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private QueryType query;
 
     @ElementCollection
-    @CollectionTable(name = "rule_condition_arguments", joinColumns = @JoinColumn(name = "condition_id"))
-    @Column(name = "argument")
+    @CollectionTable(name = "rule_condition_arguments",
+            joinColumns = @JoinColumn(name = "condition_id"))
+    @Column(name = "argument", nullable = false)
     private List<String> arguments = new ArrayList<>();
 
     @Column(nullable = false)
     private boolean negate;
 
+    public RuleCondition() {}
+
     public RuleCondition(QueryType query, List<String> arguments, boolean negate) {
         this.query = query;
-        this.arguments = arguments;
+        this.arguments = arguments != null ? arguments : new ArrayList<>();
         this.negate = negate;
     }
 
@@ -42,7 +43,9 @@ public class RuleCondition {
     public void setQuery(QueryType query) { this.query = query; }
 
     public List<String> getArguments() { return arguments; }
-    public void setArguments(List<String> arguments) { this.arguments = arguments; }
+    public void setArguments(List<String> arguments) {
+        this.arguments = arguments != null ? arguments : new ArrayList<>();
+    }
 
     public boolean isNegate() { return negate; }
     public void setNegate(boolean negate) { this.negate = negate; }

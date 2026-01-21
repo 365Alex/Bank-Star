@@ -1,20 +1,42 @@
 package com.bank.star.star.model;
 
-import java.util.Set;
+import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
 
+import java.util.Set;
+@Entity
+@Table(name = "dynamic_recommendations")
 public class DynamicRecommendation {
-    private String name;
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
+
+    @Column(name = "name", nullable = false)
+    private String name;
+
+    @Column(name = "text")
     private String text;
 
-//   @ OneToMany
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JoinColumn(name = "recommendation_id")
     private Set<DynamicRule> dynamicRuleSet;
 
-    public DynamicRecommendation(String name, String id, String text, Set<DynamicRule> dynamicRuleSet) {
+    public DynamicRecommendation() {}
+
+    public DynamicRecommendation(String name, String text, Set<DynamicRule> dynamicRuleSet) {
         this.name = name;
-        this.id = id;
         this.text = text;
         this.dynamicRuleSet = dynamicRuleSet;
+    }
+
+    // Геттеры и сеттеры
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getName() {
@@ -23,14 +45,6 @@ public class DynamicRecommendation {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
     }
 
     public String getText() {
