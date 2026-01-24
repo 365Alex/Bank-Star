@@ -1,7 +1,7 @@
 package com.bank.star.star.model;
 
 import jakarta.persistence.*;
-import org.springframework.data.annotation.Id;
+
 
 import java.util.Set;
 @Entity

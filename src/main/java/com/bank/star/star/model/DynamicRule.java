@@ -3,7 +3,6 @@ package com.bank.star.star.model;
 
 import com.bank.star.star.entity.RuleCondition;
 import jakarta.persistence.*;
-import org.springframework.data.annotation.Id;
 
 import java.util.List;
 import java.util.UUID;
