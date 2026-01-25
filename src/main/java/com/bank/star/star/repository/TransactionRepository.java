@@ -2,8 +2,10 @@ package com.bank.star.star.repository;
 
 import com.bank.star.star.entity.ProductType;
 import com.bank.star.star.entity.TransactionType;
-import org.springframework.stereotype.Repository;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
+
 import java.util.UUID;
 
 @Repository
@@ -11,7 +13,7 @@ public class TransactionRepository {
 
     private final JdbcTemplate jdbcTemplate;
 
-    public TransactionRepository(JdbcTemplate jdbcTemplate) {
+    public TransactionRepository(@Qualifier("recommendationsJdbcTemplate") JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
