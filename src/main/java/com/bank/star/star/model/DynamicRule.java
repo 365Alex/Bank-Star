@@ -1,6 +1,5 @@
 package com.bank.star.star.model;
 
-
 import com.bank.star.star.entity.RuleCondition;
 import jakarta.persistence.*;
 
@@ -23,20 +22,29 @@ public class DynamicRule {
     @Column(name = "product_text", columnDefinition = "TEXT", nullable = false)
     private String productText;
 
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
+
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinColumn(name = "rule_id")
     private List<RuleCondition> conditions;
 
     public DynamicRule() {}
 
-    public DynamicRule(String productName, String productId, String productText, List<RuleCondition> conditions) {
+    public DynamicRule(String productName, String productId, String productText,
+                       Boolean isActive, List<RuleCondition> conditions) {
         this.productName = productName;
         this.productId = productId;
         this.productText = productText;
+        this.isActive = isActive;
         this.conditions = conditions;
     }
 
-    // Геттеры и сеттеры
+    // Добавляем геттер/сеттер для isActive
+    public Boolean getIsActive() { return isActive; }
+    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
+
+    // Остальные геттеры/сеттеры остаются
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
 

@@ -3,6 +3,8 @@ package com.bank.star.star.service;
 import com.bank.star.star.DTO.ProductRecommendation;
 import com.bank.star.star.DTO.RecommendationResponse;
 import com.bank.star.star.entity.RuleStatistic;
+import com.bank.star.star.model.DynamicRule;
+import com.bank.star.star.repository.DynamicRuleRepository;
 import com.bank.star.star.repository.RecommendationRuleSet;
 import com.bank.star.star.repository.RuleStatisticRepository;
 import org.springframework.stereotype.Service;
@@ -15,12 +17,18 @@ import java.util.UUID;
 
 @Service
 public class RecommendationService {
-    private final List<RecommendationRuleSet> rules;
+    private final List<RecommendationRuleSet> staticRules;
+    private final DynamicRuleRepository dynamicRuleRepository;
+    private final DynamicRuleChecker dynamicRuleChecker;
     private final RuleStatisticRepository ruleStatisticRepository;
 
-    public RecommendationService(List<RecommendationRuleSet> rules,
+    public RecommendationService(List<RecommendationRuleSet> staticRules,
+                                 DynamicRuleRepository dynamicRuleRepository,
+                                 DynamicRuleChecker dynamicRuleChecker,
                                  RuleStatisticRepository ruleStatisticRepository) {
-        this.rules = rules;
+        this.staticRules = staticRules;
+        this.dynamicRuleRepository = dynamicRuleRepository;
+        this.dynamicRuleChecker = dynamicRuleChecker;
         this.ruleStatisticRepository = ruleStatisticRepository;
     }
 
@@ -28,24 +36,41 @@ public class RecommendationService {
     public RecommendationResponse getRecommendations(UUID userId) {
         List<ProductRecommendation> recommendations = new ArrayList<>();
 
-        for (RecommendationRuleSet rule : rules) {
+        // 1. Проверяем статические правила
+        for (RecommendationRuleSet rule : staticRules) {
             Optional<ProductRecommendation> recommendation = rule.check(userId);
             if (recommendation.isPresent()) {
                 recommendations.add(recommendation.get());
+                updateRuleStatistic(getRuleId(rule), rule.getClass().getSimpleName());
+            }
+        }
 
-                // Обновляем статистику для статических правил
-                String ruleId = getRuleId(rule);
-                if (ruleId != null) {
-                    updateRuleStatistic(ruleId, rule.getClass().getSimpleName());
-                }
+        // 2. Проверяем динамические правила
+        List<DynamicRule> dynamicRules = dynamicRuleRepository.findAll();
+        for (DynamicRule rule : dynamicRules) {
+            // Пропускаем неактивные правила
+            if (rule.getIsActive() != null && !rule.getIsActive()) {
+                continue;
+            }
+
+            if (dynamicRuleChecker.checkRuleForUser(rule, userId)) {
+                recommendations.add(createProductRecommendation(rule));
+                updateRuleStatistic(rule.getProductId(), "DynamicRule: " + rule.getProductName());
             }
         }
 
         return new RecommendationResponse(userId.toString(), recommendations);
     }
 
+    private ProductRecommendation createProductRecommendation(DynamicRule rule) {
+        return new ProductRecommendation(
+                rule.getProductName(),
+                rule.getProductId(),
+                rule.getProductText()
+        );
+    }
+
     private String getRuleId(RecommendationRuleSet rule) {
-        // Получаем ID правила на основе его типа
         if (rule instanceof com.bank.star.star.repository.Invest500Rule) {
             return "147f6a0f-3b91-413b-ab99-87f081d60d5a";
         } else if (rule instanceof com.bank.star.star.repository.SimpleCreditRule) {
@@ -57,6 +82,8 @@ public class RecommendationService {
     }
 
     private void updateRuleStatistic(String ruleId, String ruleName) {
+        if (ruleId == null) return;
+
         RuleStatistic statistic = ruleStatisticRepository.findByRuleId(ruleId)
                 .orElse(new RuleStatistic(ruleId, ruleName));
 

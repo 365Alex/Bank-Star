@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Управление динамическими правилами</title>
+</head>
+<body>
+<h1>Динамические правила рекомендаций</h1>
+<div id="rulesList"></div>
+
+<script>
+    // Загрузка списка правил
+    fetch('/dynamic-rules')
+        .then(response => response.json())
+        .then(rules => {
+            const container = document.getElementById('rulesList');
+            rules.forEach(rule => {
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <h3>${rule.productName}</h3>
+                    <p>ID: ${rule.productId}</p>
+                    <p>Статус: ${rule.isActive ? 'Активно' : 'Неактивно'}</p>
+                    <button onclick="toggleRule('${rule.id}', ${!rule.isActive})">
+                        ${rule.isActive ? 'Деактивировать' : 'Активировать'}
+                    </button>
+                    <hr>
+                `;
+                container.appendChild(div);
+            });
+        });
+
+    function toggleRule(id, active) {
+        const endpoint = active ? 'activate' : 'deactivate';
+        fetch(`/dynamic-rules/${id}/${endpoint}`, { method: 'PATCH' })
+            .then(() => location.reload());
+    }
+</script>
+</body>
+</html>
