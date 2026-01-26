@@ -22,34 +22,34 @@ INSERT INTO product (id, type, name) VALUES
 ('33333333-3333-3333-3333-333333333333', 'INVEST', 'Инвестиционный счет'),
 ('44444444-4444-4444-4444-444444444444', 'CREDIT', 'Кредитный счет');
 
--- Вставляем тестовые транзакции для пользователя 123e4567-e89b-12d3-a456-426614174000 (ivanov)
+-- Вставляем тестовые транзакции для пользователя f37ba8a8-3cd5-4976-9f74-2b21f105da67
 INSERT INTO transaction (id, user_id, product_id, type, amount) VALUES
 -- Дебетовые транзакции (больше пополнений, чем снятий)
-('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '123e4567-e89b-12d3-a456-426614174000', '11111111-1111-1111-1111-111111111111', 'DEPOSIT', 200000), -- 2000 руб
-('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '123e4567-e89b-12d3-a456-426614174000', '11111111-1111-1111-1111-111111111111', 'WITHDRAW', 150000), -- 1500 руб
+('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'f37ba8a8-3cd5-4976-9f74-2b21f105da67', '11111111-1111-1111-1111-111111111111', 'DEPOSIT', 200000), -- 2000 руб
+('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'f37ba8a8-3cd5-4976-9f74-2b21f105da67', '11111111-1111-1111-1111-111111111111', 'WITHDRAW', 150000), -- 1500 руб
 -- Сберегательные транзакции (больше 1000 руб)
-('cccccccc-cccc-cccc-cccc-cccccccccccc', '123e4567-e89b-12d3-a456-426614174000', '22222222-2222-2222-2222-222222222222', 'DEPOSIT', 150000); -- 1500 руб
+('cccccccc-cccc-cccc-cccc-cccccccccccc', 'f37ba8a8-3cd5-4976-9f74-2b21f105da67', '22222222-2222-2222-2222-222222222222', 'DEPOSIT', 150000); -- 1500 руб
 -- Большие пополнения DEBIT (>500000 руб)
-('dddddddd-dddd-dddd-dddd-dddddddddddd', '123e4567-e89b-12d3-a456-426614174000', '11111111-1111-1111-1111-111111111111', 'DEPOSIT', 6000000), -- 60000 руб
-('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', '123e4567-e89b-12d3-a456-426614174000', '11111111-1111-1111-1111-111111111111', 'DEPOSIT', 8000000), -- 80000 руб
+('dddddddd-dddd-dddd-dddd-dddddddddddd', 'f37ba8a8-3cd5-4976-9f74-2b21f105da67', '11111111-1111-1111-1111-111111111111', 'DEPOSIT', 6000000), -- 60000 руб
+('eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee', 'f37ba8a8-3cd5-4976-9f74-2b21f105da67', '11111111-1111-1111-1111-111111111111', 'DEPOSIT', 8000000), -- 80000 руб
 
 -- Большие пополнения SAVING (>200000 руб)
-('ffffffff-ffff-ffff-ffff-ffffffffffff', '123e4567-e89b-12d3-a456-426614174000', '22222222-2222-2222-2222-222222222222', 'DEPOSIT', 3000000), -- 30000 руб
-('gggggggg-gggg-gggg-gggg-gggggggggggg', '123e4567-e89b-12d3-a456-426614174000', '22222222-2222-2222-2222-222222222222', 'DEPOSIT', 4000000), -- 40000 руб
+('ffffffff-ffff-ffff-ffff-ffffffffffff', 'f37ba8a8-3cd5-4976-9f74-2b21f105da67', '22222222-2222-2222-2222-222222222222', 'DEPOSIT', 3000000), -- 30000 руб
+('gggggggg-gggg-gggg-gggg-gggggggggggg', 'f37ba8a8-3cd5-4976-9f74-2b21f105da67', '22222222-2222-2222-2222-222222222222', 'DEPOSIT', 4000000), -- 40000 руб
 
 -- Небольшие снятия (чтобы пополнения > снятий)
-('hhhhhhhh-hhhh-hhhh-hhhh-hhhhhhhhhhhh', '123e4567-e89b-12d3-a456-426614174000', '11111111-1111-1111-1111-111111111111', 'WITHDRAW', 1000000); -- 10000 руб
+('hhhhhhhh-hhhh-hhhh-hhhh-hhhhhhhhhhhh', 'f37ba8a8-3cd5-4976-9f74-2b21f105da67', '11111111-1111-1111-1111-111111111111', 'WITHDRAW', 1000000); -- 10000 руб
 
--- Для Петрова:
+-- Для e61cc8e6-f3e2-4d8c-9a58-a379f9205a4e:
 INSERT INTO transaction (id, user_id, product_id, type, amount) VALUES
 -- Петров имеет кредитные продукты (не должен получать premium credit card)
-('iiiiiiii-iiii-iiii-iiii-iiiiiiiiiiii', '123e4567-e89b-12d3-a456-426614174001', '44444444-4444-4444-4444-444444444444', 'WITHDRAW', 2000000), -- 20000 руб
+('iiiiiiii-iiii-iiii-iiii-iiiiiiiiiiii', 'e61cc8e6-f3e2-4d8c-9a58-a379f9205a4e', '44444444-4444-4444-4444-444444444444', 'WITHDRAW', 2000000), -- 20000 руб
 
 -- Маленькие пополнения DEBIT
-('jjjjjjjj-jjjj-jjjj-jjjj-jjjjjjjjjjjj', '123e4567-e89b-12d3-a456-426614174001', '11111111-1111-1111-1111-111111111111', 'DEPOSIT', 100000), -- 1000 руб
+('jjjjjjjj-jjjj-jjjj-jjjj-jjjjjjjjjjjj', 'e61cc8e6-f3e2-4d8c-9a58-a379f9205a4e', '11111111-1111-1111-1111-111111111111', 'DEPOSIT', 100000), -- 1000 руб
 
 -- Маленькие пополнения SAVING
-('kkkkkkkk-kkkk-kkkk-kkkk-kkkkkkkkkkkk', '123e4567-e89b-12d3-a456-426614174001', '22222222-2222-2222-2222-222222222222', 'DEPOSIT', 50000); -- 500 руб
+('kkkkkkkk-kkkk-kkkk-kkkk-kkkkkkkkkkkk', 'e61cc8e6-f3e2-4d8c-9a58-a379f9205a4e', '22222222-2222-2222-2222-222222222222', 'DEPOSIT', 50000); -- 500 руб
 
 
 INSERT INTO dynamic_rules (id, product_name, product_id, product_text, is_active)
