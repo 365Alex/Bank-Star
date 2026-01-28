@@ -1,159 +1,147 @@
 package com.bank.star.star.service;
 
-import com.bank.star.star.entity.QueryType;
-import com.bank.star.star.entity.RuleCondition;
+import com.bank.star.star.entity.ProductType;
+import com.bank.star.star.entity.TransactionType;
 import com.bank.star.star.model.DynamicRule;
 import com.bank.star.star.repository.TransactionRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.UUID;
 
 @Component
 public class DynamicRuleChecker {
 
     private final TransactionRepository transactionRepository;
+    private final ObjectMapper objectMapper;
 
-    public DynamicRuleChecker(TransactionRepository transactionRepository) {
+    public DynamicRuleChecker(TransactionRepository transactionRepository, ObjectMapper objectMapper) {
         this.transactionRepository = transactionRepository;
+        this.objectMapper = objectMapper;
     }
 
-    /**
-     * Проверяет выполнение одного динамического правила для пользователя
-     */
     public boolean checkRuleForUser(DynamicRule rule, UUID userId) {
-        if (rule.getConditions() == null || rule.getConditions().isEmpty()) {
-            return false; // Правило без условий не выполняется
-        }
-
-        boolean allConditionsMet = true;
-
-        for (RuleCondition condition : rule.getConditions()) {
-            boolean conditionResult = checkCondition(condition, userId);
-
-            // Если условие с negate=true, инвертируем результат
-            if (condition.isNegate()) {
-                conditionResult = !conditionResult;
+        try {
+            if (rule.getRuleConditionsJson() == null || rule.getRuleConditionsJson().isEmpty()) {
+                return false;
             }
 
-            if (!conditionResult) {
-                allConditionsMet = false;
-                break;
+            JsonNode conditions = objectMapper.readTree(rule.getRuleConditionsJson());
+
+            for (JsonNode condition : conditions) {
+                boolean result = checkCondition(condition, userId);
+
+                boolean negate = condition.has("negate") && condition.get("negate").asBoolean();
+                if (negate) {
+                    result = !result;
+                }
+
+                if (!result) {
+                    return false;
+                }
             }
-        }
-
-        return allConditionsMet;
-    }
-
-    /**
-     * Проверяет одно условие для пользователя
-     */
-    private boolean checkCondition(RuleCondition condition, UUID userId) {
-        QueryType query = condition.getQuery();
-        List<String> arguments = condition.getArguments();
-
-        switch (query) {
-            case USER_OF:
-                return checkUserOfCondition(arguments, userId);
-
-            case ACTIVE_USER_OF:
-                return checkActiveUserOfCondition(arguments, userId);
-
-            case TRANSACTION_SUM_COMPARE:
-                return checkTransactionSumCompare(arguments, userId);
-
-            case TRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAW:
-                return checkTransactionSumCompareDepositWithdraw(arguments, userId);
-
-            default:
-                throw new IllegalArgumentException("Unknown query type: " + query);
-        }
-    }
-
-    /**
-     * Проверяет условие USER_OF
-     * arguments[0] - тип продукта (DEBIT, CREDIT, etc.)
-     */
-    private boolean checkUserOfCondition(List<String> arguments, UUID userId) {
-        if (arguments.size() < 1) return false;
-
-        try {
-            com.bank.star.star.entity.ProductType productType =
-                    com.bank.star.star.entity.ProductType.valueOf(arguments.get(0));
-            return transactionRepository.hasProduct(userId, productType);
-        } catch (IllegalArgumentException e) {
-            return false;
-        }
-    }
-
-    /**
-     * Проверяет условие ACTIVE_USER_OF
-     * arguments[0] - тип продукта
-     * arguments[1] - минимальная сумма транзакций (в рублях)
-     */
-    private boolean checkActiveUserOfCondition(List<String> arguments, UUID userId) {
-        if (arguments.size() < 2) return false;
-
-        try {
-            com.bank.star.star.entity.ProductType productType =
-                    com.bank.star.star.entity.ProductType.valueOf(arguments.get(0));
-            int minAmount = Integer.parseInt(arguments.get(1));
-
-            // Проверяем, что сумма всех транзакций по продукту > minAmount
-            long depositSum = transactionRepository.getDepositSum(userId, productType);
-            long withdrawSum = transactionRepository.getWithdrawSum(userId, productType);
-            long totalSum = depositSum + withdrawSum;
-
-            // Конвертируем рубли в копейки для сравнения
-            return totalSum > (minAmount * 100L);
+            return true;
         } catch (Exception e) {
             return false;
         }
     }
 
-    /**
-     * Проверяет условие TRANSACTION_SUM_COMPARE
-     * arguments[0] - тип продукта
-     * arguments[1] - тип транзакции (DEPOSIT/WITHDRAW)
-     * arguments[2] - пороговая сумма (в рублях)
-     */
-    private boolean checkTransactionSumCompare(List<String> arguments, UUID userId) {
-        if (arguments.size() < 3) return false;
-
+    private boolean checkCondition(JsonNode condition, UUID userId) {
         try {
-            com.bank.star.star.entity.ProductType productType =
-                    com.bank.star.star.entity.ProductType.valueOf(arguments.get(0));
-            com.bank.star.star.entity.TransactionType transactionType =
-                    com.bank.star.star.entity.TransactionType.valueOf(arguments.get(1));
-            int threshold = Integer.parseInt(arguments.get(2));
+            String queryType = condition.get("query").asText();
+            JsonNode args = condition.get("arguments");
 
-            return transactionRepository.transactionSumCompare(userId, threshold,
-                    productType, transactionType);
+            switch (queryType) {
+                case "USER_OF":
+                    return checkUserOf(args, userId);
+                case "ACTIVE_USER_OF":
+                    return checkActiveUserOf(args, userId);
+                case "TRANSACTION_SUM_COMPARE":
+                    return checkTransactionSumCompare(args, userId);
+                case "TRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAW":
+                    return checkTransactionSumCompareDepositWithdraw(args, userId);
+                default:
+                    return false;
+            }
         } catch (Exception e) {
             return false;
         }
     }
 
-    /**
-     * Проверяет условие TRANSACTION_SUM_COMPARE_DEPOSIT_WITHDRAW
-     * arguments[0] - тип продукта
-     * Сравнивает сумму пополнений и снятий
-     */
-    private boolean checkTransactionSumCompareDepositWithdraw(List<String> arguments, UUID userId) {
-        if (arguments.size() < 1) return false;
+    private boolean checkUserOf(JsonNode args, UUID userId) {
+        if (args.size() < 1) return false;
+        String productTypeStr = args.get(0).asText();
+        ProductType productType = ProductType.valueOf(productTypeStr);
+        return transactionRepository.hasProduct(userId, productType);
+    }
 
+    private boolean checkActiveUserOf(JsonNode args, UUID userId) {
+        if (args.size() < 1) return false;
+        String productTypeStr = args.get(0).asText();
+        ProductType productType = ProductType.valueOf(productTypeStr);
+
+        // Активный пользователь = минимум 5 транзакций
+        // Нужно реализовать метод для подсчета количества транзакций
+        long transactionCount = getTransactionCount(userId, productType);
+        return transactionCount >= 5;
+    }
+
+    private boolean checkTransactionSumCompare(JsonNode args, UUID userId) {
+        if (args.size() < 4) return false;
+
+        String productTypeStr = args.get(0).asText();
+        String transactionTypeStr = args.get(1).asText();
+        String operator = args.get(2).asText();
+        long threshold = args.get(3).asLong() * 100; // В копейки
+
+        ProductType productType = ProductType.valueOf(productTypeStr);
+        TransactionType transactionType = TransactionType.valueOf(transactionTypeStr);
+
+        long sum = transactionRepository.getTransactionSum(userId, productType, transactionType);
+
+        return compareValues(sum, threshold, operator);
+    }
+
+    private boolean checkTransactionSumCompareDepositWithdraw(JsonNode args, UUID userId) {
+        if (args.size() < 2) return false;
+
+        String productTypeStr = args.get(0).asText();
+        String operator = args.get(1).asText();
+
+        ProductType productType = ProductType.valueOf(productTypeStr);
+
+        long depositSum = transactionRepository.getDepositSum(userId, productType);
+        long withdrawSum = transactionRepository.getWithdrawSum(userId, productType);
+
+        return compareValues(depositSum, withdrawSum, operator);
+    }
+
+    private long getTransactionCount(UUID userId, ProductType productType) {
+        // Упрощенная реализация - в реальном проекте нужно добавить соответствующий запрос
+        String sql = """
+            SELECT COUNT(*) FROM transaction t
+            JOIN product p ON t.product_id = p.id
+            WHERE t.user_id = ? AND p.type = ?
+            """;
         try {
-            com.bank.star.star.entity.ProductType productType =
-                    com.bank.star.star.entity.ProductType.valueOf(arguments.get(0));
-
-            // Сравниваем сумму пополнений и снятий
-            return transactionRepository.compareTransactionSums(
-                    userId,
-                    productType, com.bank.star.star.entity.TransactionType.DEPOSIT,
-                    productType, com.bank.star.star.entity.TransactionType.WITHDRAW
+            Long count = transactionRepository.getJdbcTemplate().queryForObject(
+                    sql, Long.class, userId, productType.name()
             );
+            return count != null ? count : 0;
         } catch (Exception e) {
-            return false;
+            return 0;
         }
+    }
+
+    private boolean compareValues(long value1, long value2, String operator) {
+        return switch (operator) {
+            case ">" -> value1 > value2;
+            case "<" -> value1 < value2;
+            case "=" -> value1 == value2;
+            case ">=" -> value1 >= value2;
+            case "<=" -> value1 <= value2;
+            default -> false;
+        };
     }
 }

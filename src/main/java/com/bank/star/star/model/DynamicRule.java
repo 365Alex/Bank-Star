@@ -1,16 +1,14 @@
 package com.bank.star.star.model;
 
-import com.bank.star.star.entity.RuleCondition;
 import jakarta.persistence.*;
-
-import java.util.List;
 import java.util.UUID;
 
 @Entity
 @Table(name = "dynamic_rules")
 public class DynamicRule {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(name = "product_name", nullable = false)
@@ -25,26 +23,10 @@ public class DynamicRule {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    @JoinColumn(name = "rule_id")
-    private List<RuleCondition> conditions;
+    @Column(name = "rule_conditions", columnDefinition = "TEXT")
+    private String ruleConditionsJson;
 
-    public DynamicRule() {}
-
-    public DynamicRule(String productName, String productId, String productText,
-                       Boolean isActive, List<RuleCondition> conditions) {
-        this.productName = productName;
-        this.productId = productId;
-        this.productText = productText;
-        this.isActive = isActive;
-        this.conditions = conditions;
-    }
-
-    // Добавляем геттер/сеттер для isActive
-    public Boolean getIsActive() { return isActive; }
-    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
-
-    // Остальные геттеры/сеттеры остаются
+    // Геттеры и сеттеры
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
 
@@ -57,6 +39,11 @@ public class DynamicRule {
     public String getProductText() { return productText; }
     public void setProductText(String productText) { this.productText = productText; }
 
-    public List<RuleCondition> getConditions() { return conditions; }
-    public void setConditions(List<RuleCondition> conditions) { this.conditions = conditions; }
+    public Boolean getIsActive() { return isActive; }
+    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
+
+    public String getRuleConditionsJson() { return ruleConditionsJson; }
+    public void setRuleConditionsJson(String ruleConditionsJson) {
+        this.ruleConditionsJson = ruleConditionsJson;
+    }
 }

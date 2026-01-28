@@ -1,27 +1,68 @@
 package com.bank.star.star.controller;
-
+import com.bank.star.star.DTO.CreateDynamicRuleRequest;
 import com.bank.star.star.DTO.RuleStatsResponse;
 import com.bank.star.star.entity.RuleStatistic;
+import com.bank.star.star.model.DynamicRule;
+import com.bank.star.star.repository.DynamicRuleRepository;
 import com.bank.star.star.repository.RuleStatisticRepository;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/rule")
 public class RuleStatsController {
 
+    private final DynamicRuleRepository dynamicRuleRepository;
     private final RuleStatisticRepository ruleStatisticRepository;
+    private final ObjectMapper objectMapper;
 
-    public RuleStatsController(RuleStatisticRepository ruleStatisticRepository) {
+    public  RuleStatsController (DynamicRuleRepository dynamicRuleRepository,
+                          RuleStatisticRepository ruleStatisticRepository,
+                          ObjectMapper objectMapper) {
+        this.dynamicRuleRepository = dynamicRuleRepository;
         this.ruleStatisticRepository = ruleStatisticRepository;
+        this.objectMapper = objectMapper;
+    }
+
+    @PostMapping
+    public ResponseEntity<?> createRule(@RequestBody CreateDynamicRuleRequest request)
+            throws JsonProcessingException {
+
+        DynamicRule rule = new DynamicRule();
+        rule.setProductName(request.getProductName());
+        rule.setProductId(request.getProductId());
+        rule.setProductText(request.getProductText());
+        rule.setIsActive(true);
+
+        // Конвертируем rule в JSON
+        String ruleJson = objectMapper.writeValueAsString(request.getConditions());
+        rule.setRuleConditionsJson(ruleJson);
+
+        DynamicRule saved = dynamicRuleRepository.save(rule);
+
+        return ResponseEntity.ok(saved);
+    }
+
+    @GetMapping
+    public ResponseEntity<?> getAllRules() {
+        List<DynamicRule> rules = dynamicRuleRepository.findAll();
+        return ResponseEntity.ok().body(rules);
+    }
+
+    @DeleteMapping("/{productId}")
+    public ResponseEntity<Void> deleteRule(@PathVariable String productId) {
+        // Ищем правило по productId
+        dynamicRuleRepository.findByProductId(productId)
+                .ifPresent(dynamicRuleRepository::delete);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/stats")
-    public RuleStatsResponse getRuleStats() {
+    public ResponseEntity<RuleStatsResponse> getStats() {
         List<RuleStatistic> allStats = ruleStatisticRepository.findAll();
 
         List<RuleStatsResponse.RuleStat> stats = allStats.stream()
@@ -29,8 +70,9 @@ public class RuleStatsController {
                         stat.getRuleId(),
                         stat.getExecutionCount()
                 ))
-                .collect(Collectors.toList());
+                .toList();
 
-        return new RuleStatsResponse(stats);
+        return ResponseEntity.ok(new RuleStatsResponse(stats));
     }
+
 }

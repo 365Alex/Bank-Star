@@ -53,7 +53,7 @@ public class DynamicRuleController {
                     existingRule.setProductId(updatedRule.getProductId());
                     existingRule.setProductText(updatedRule.getProductText());
                     existingRule.setIsActive(updatedRule.getIsActive());
-                    existingRule.setConditions(updatedRule.getConditions());
+                    existingRule.setRuleConditionsJson(updatedRule.getRuleConditionsJson());
                     return ResponseEntity.ok(dynamicRuleRepository.save(existingRule));
                 })
                 .orElse(ResponseEntity.notFound().build());
