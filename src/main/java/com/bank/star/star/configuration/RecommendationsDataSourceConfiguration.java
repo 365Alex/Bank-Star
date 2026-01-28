@@ -2,7 +2,6 @@ package com.bank.star.star.configuration;
 
 import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
@@ -15,38 +14,37 @@ import javax.sql.DataSource;
 @Configuration
 public class RecommendationsDataSourceConfiguration {
 
-    @Value("${recommendations.datasource.url}")
-    private String recommendationsDbUrl;
-
-    @Bean(name = "recommendationsDataSource")
-    @ConfigurationProperties(prefix = "recommendations.datasource")
-    public DataSource recommendationsDataSource() {
-        return DataSourceBuilder.create()
-                .url(recommendationsDbUrl)
-                .driverClassName("org.h2.Driver")
-                .type(HikariDataSource.class)
-                .build();
-    }
-
-    @Bean(name = "recommendationsJdbcTemplate")
-    public JdbcTemplate recommendationsJdbcTemplate(
-            @Qualifier("recommendationsDataSource") DataSource dataSource) {
-        return new JdbcTemplate(dataSource);
-    }
-
+    // Primary DataSource (для JPA)
     @Primary
     @Bean(name = "primaryDataSource")
-    @ConfigurationProperties(prefix = "spring.datasource")
+    @ConfigurationProperties(prefix = "spring.datasource.primary")
     public DataSource primaryDataSource() {
         return DataSourceBuilder.create()
                 .type(HikariDataSource.class)
                 .build();
     }
 
+    // Recommendations DataSource (для аналитики)
+    @Bean(name = "recommendationsDataSource")
+    @ConfigurationProperties(prefix = "spring.datasource.recommendations")
+    public DataSource recommendationsDataSource() {
+        return DataSourceBuilder.create()
+                .type(HikariDataSource.class)
+                .build();
+    }
+
+    // JdbcTemplate для Primary
     @Primary
     @Bean(name = "primaryJdbcTemplate")
     public JdbcTemplate primaryJdbcTemplate(
             @Qualifier("primaryDataSource") DataSource dataSource) {
+        return new JdbcTemplate(dataSource);
+    }
+
+    // JdbcTemplate для Recommendations
+    @Bean(name = "recommendationsJdbcTemplate")
+    public JdbcTemplate recommendationsJdbcTemplate(
+            @Qualifier("recommendationsDataSource") DataSource dataSource) {
         return new JdbcTemplate(dataSource);
     }
 }
