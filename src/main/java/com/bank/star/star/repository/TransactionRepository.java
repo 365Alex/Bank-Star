@@ -2,98 +2,71 @@ package com.bank.star.star.repository;
 
 import com.bank.star.star.entity.ProductType;
 import com.bank.star.star.entity.TransactionType;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 @Repository
 public class TransactionRepository {
 
     private final JdbcTemplate jdbcTemplate;
 
-    // Кеши для разных запросов
-    private final Cache<String, Boolean> hasProductCache;
-    private final Cache<String, Long> transactionSumCache;
-
-    public TransactionRepository(@Qualifier("recommendationsJdbcTemplate") JdbcTemplate jdbcTemplate) {
+    public TransactionRepository(
+            @Qualifier("recommendationsJdbcTemplate") JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
-
-        this.hasProductCache = Caffeine.newBuilder()
-                .maximumSize(1000)
-                .expireAfterWrite(10, TimeUnit.MINUTES)
-                .build();
-
-        this.transactionSumCache = Caffeine.newBuilder()
-                .maximumSize(1000)
-                .expireAfterWrite(10, TimeUnit.MINUTES)
-                .build();
     }
 
-    public JdbcTemplate getJdbcTemplate() {
-        return jdbcTemplate;
-    }
-
+    /**
+     * Проверяет, использует ли пользователь продукты определенного типа
+     */
     public boolean hasProduct(UUID userId, ProductType productType) {
-        String cacheKey = userId + "_" + productType;
+        String sql = """
+            SELECT COUNT(*) > 0
+            FROM transaction t
+            JOIN product p ON t.product_id = p.id
+            WHERE t.user_id = ? 
+              AND p.type = ? 
+            """;
 
-        return hasProductCache.get(cacheKey, key -> {
-            String sql = """
-                SELECT EXISTS (
-                    SELECT 1 FROM transaction t
-                    JOIN product p ON t.product_id = p.id
-                    WHERE t.user_id = ? 
-                    AND p.type = ?
-                    LIMIT 1
-                )
-                """;
-
-            Boolean result = jdbcTemplate.queryForObject(
-                    sql,
-                    Boolean.class,
-                    userId,
-                    productType.name()
-            );
-            return Boolean.TRUE.equals(result);
-        });
+        Boolean result = jdbcTemplate.queryForObject(
+                sql,
+                Boolean.class,
+                userId.toString(),  // конвертируем UUID в строку
+                productType.toString()
+        );
+        return Boolean.TRUE.equals(result);
     }
 
+    /**
+     * Получает сумму транзакций определенного типа для определенного типа продукта
+     * @return сумма в копейках
+     */
     public long getTransactionSum(UUID userId, ProductType productType, TransactionType transactionType) {
-        String cacheKey = userId + "_" + productType + "_" + transactionType;
+        String sql = """
+            SELECT COALESCE(SUM(t.amount), 0)
+            FROM transaction t
+            JOIN product p ON t.product_id = p.id
+            WHERE t.user_id = ?
+              AND p.type = ?
+              AND t.type = ?
+            """;
 
-        return transactionSumCache.get(cacheKey, key -> {
-            String sql = """
-                SELECT COALESCE(SUM(t.amount), 0)
-                FROM transaction t
-                JOIN product p ON t.product_id = p.id
-                WHERE t.user_id = ?
-                AND p.type = ?
-                AND t.type = ?
-                """;
-
-            Long result = jdbcTemplate.queryForObject(
-                    sql,
-                    Long.class,
-                    userId,
-                    productType.name(),
-                    transactionType.name()
-            );
-            return result != null ? result : 0L;
-        });
+        Long result = jdbcTemplate.queryForObject(
+                sql,
+                Long.class,
+                userId.toString(),  // конвертируем UUID в строку
+                productType.toString(),
+                transactionType.toString()
+        );
+        return result != null ? result : 0L;
     }
 
-    public long getDepositSum(UUID userId, ProductType productType) {
-        return getTransactionSum(userId, productType, TransactionType.DEPOSIT);
-    }
-
-    public long getWithdrawSum(UUID userId, ProductType productType) {
-        return getTransactionSum(userId, productType, TransactionType.WITHDRAW);
-    }
-
+    /**
+     * Сравнивает сумму двух типов транзакций
+     * возвращает true если сумма первых транзакций больше суммы вторых транзакций
+     */
     public boolean compareTransactionSums(UUID userId,
                                           ProductType productType1, TransactionType transactionType1,
                                           ProductType productType2, TransactionType transactionType2) {
@@ -102,17 +75,38 @@ public class TransactionRepository {
         return sum1 > sum2;
     }
 
+    /**
+     * Проверяет, что сумма транзакций превышает порог
+     * @param threshold порог в рублях (автоматически преобразуется в копейки)
+     */
     public boolean transactionSumCompare(UUID userId, int threshold,
                                          ProductType productType, TransactionType transactionType) {
         long sumInKopecks = getTransactionSum(userId, productType, transactionType);
-        long thresholdInKopecks = threshold * 100L;
+        long thresholdInKopecks = threshold * 100L; // конвертируем рубли в копейки
         return sumInKopecks > thresholdInKopecks;
     }
 
+    /**
+     * Проверяет, что сумма транзакций больше или равна порогу
+     */
     public boolean transactionSumGreaterOrEqual(UUID userId, int threshold,
                                                 ProductType productType, TransactionType transactionType) {
         long sumInKopecks = getTransactionSum(userId, productType, transactionType);
         long thresholdInKopecks = threshold * 100L;
         return sumInKopecks >= thresholdInKopecks;
+    }
+
+    /**
+     * Получает сумму пополнений для определенного типа продукта
+     */
+    public long getDepositSum(UUID userId, ProductType productType) {
+        return getTransactionSum(userId, productType, TransactionType.DEPOSIT);
+    }
+
+    /**
+     * Получает сумму снятий для определенного типа продукта
+     */
+    public long getWithdrawSum(UUID userId, ProductType productType) {
+        return getTransactionSum(userId, productType, TransactionType.WITHDRAW);
     }
 }

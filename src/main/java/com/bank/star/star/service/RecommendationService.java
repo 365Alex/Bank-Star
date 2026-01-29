@@ -2,6 +2,7 @@ package com.bank.star.star.service;
 
 import com.bank.star.star.DTO.ProductRecommendation;
 import com.bank.star.star.DTO.RecommendationResponse;
+import com.bank.star.star.entity.RuleStatistic;
 import com.bank.star.star.model.DynamicRule;
 import com.bank.star.star.repository.DynamicRuleRepository;
 import com.bank.star.star.repository.RecommendationRuleSet;
@@ -16,20 +17,19 @@ import java.util.UUID;
 
 @Service
 public class RecommendationService {
-
     private final List<RecommendationRuleSet> staticRules;
     private final DynamicRuleRepository dynamicRuleRepository;
-    private final RuleStatisticRepository ruleStatisticRepository;
     private final DynamicRuleChecker dynamicRuleChecker;
+    private final RuleStatisticRepository ruleStatisticRepository;
 
     public RecommendationService(List<RecommendationRuleSet> staticRules,
                                  DynamicRuleRepository dynamicRuleRepository,
-                                 RuleStatisticRepository ruleStatisticRepository,
-                                 DynamicRuleChecker dynamicRuleChecker) {
+                                 DynamicRuleChecker dynamicRuleChecker,
+                                 RuleStatisticRepository ruleStatisticRepository) {
         this.staticRules = staticRules;
         this.dynamicRuleRepository = dynamicRuleRepository;
-        this.ruleStatisticRepository = ruleStatisticRepository;
         this.dynamicRuleChecker = dynamicRuleChecker;
+        this.ruleStatisticRepository = ruleStatisticRepository;
     }
 
     @Transactional
@@ -39,49 +39,55 @@ public class RecommendationService {
         // 1. Проверяем статические правила
         for (RecommendationRuleSet rule : staticRules) {
             Optional<ProductRecommendation> recommendation = rule.check(userId);
-            recommendation.ifPresent(recommendations::add);
+            if (recommendation.isPresent()) {
+                recommendations.add(recommendation.get());
+                updateRuleStatistic(getRuleId(rule), rule.getClass().getSimpleName());
+            }
         }
 
         // 2. Проверяем динамические правила
         List<DynamicRule> dynamicRules = dynamicRuleRepository.findAll();
         for (DynamicRule rule : dynamicRules) {
-            if (Boolean.FALSE.equals(rule.getIsActive())) {
+            // Пропускаем неактивные правила
+            if (rule.getIsActive() != null && !rule.getIsActive()) {
                 continue;
             }
 
-            try {
-                if (dynamicRuleChecker.checkRuleForUser(rule, userId)) {
-                    recommendations.add(new ProductRecommendation(
-                            rule.getProductName(),
-                            rule.getProductId(),
-                            rule.getProductText()
-                    ));
-                    updateRuleStatistic(rule.getId().toString(), rule.getProductName());
-                }
-            } catch (Exception e) {
-                System.err.println("Error checking dynamic rule " + rule.getId() + ": " + e.getMessage());
+            if (dynamicRuleChecker.checkRuleForUser(rule, userId)) {
+                recommendations.add(createProductRecommendation(rule));
+                updateRuleStatistic(rule.getProductId(), "DynamicRule: " + rule.getProductName());
             }
         }
 
         return new RecommendationResponse(userId.toString(), recommendations);
     }
 
-    private void updateRuleStatistic(String ruleId, String ruleName) {
-        try {
-            var statistic = ruleStatisticRepository.findById(ruleId)
-                    .orElseGet(() -> {
-                        var newStat = new com.bank.star.star.entity.RuleStatistic();
-                        newStat.setId(ruleId);
-                        newStat.setRuleId(ruleId);
-                        newStat.setRuleName(ruleName);
-                        newStat.setExecutionCount(0L);
-                        return newStat;
-                    });
+    private ProductRecommendation createProductRecommendation(DynamicRule rule) {
+        return new ProductRecommendation(
+                rule.getProductName(),
+                rule.getProductId(),
+                rule.getProductText()
+        );
+    }
 
-            statistic.incrementCount();
-            ruleStatisticRepository.save(statistic);
-        } catch (Exception e) {
-            System.err.println("Failed to update statistic: " + e.getMessage());
+    private String getRuleId(RecommendationRuleSet rule) {
+        if (rule instanceof com.bank.star.star.repository.Invest500Rule) {
+            return "147f6a0f-3b91-413b-ab99-87f081d60d5a";
+        } else if (rule instanceof com.bank.star.star.repository.SimpleCreditRule) {
+            return "ab138afb-f3ba-4a93-b74f-0fcee86d447f";
+        } else if (rule instanceof com.bank.star.star.repository.TopSavingRule) {
+            return "59efc529-2fff-41af-baff-90ccd7402925";
         }
+        return null;
+    }
+
+    private void updateRuleStatistic(String ruleId, String ruleName) {
+        if (ruleId == null) return;
+
+        RuleStatistic statistic = ruleStatisticRepository.findByRuleId(ruleId)
+                .orElse(new RuleStatistic(ruleId, ruleName));
+
+        statistic.incrementCount();
+        ruleStatisticRepository.save(statistic);
     }
 }

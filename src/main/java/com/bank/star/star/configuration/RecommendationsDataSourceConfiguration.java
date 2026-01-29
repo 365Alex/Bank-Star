@@ -14,26 +14,15 @@ import javax.sql.DataSource;
 @Configuration
 public class RecommendationsDataSourceConfiguration {
 
-    // Primary DataSource (для JPA)
-    @Primary
-    @Bean(name = "primaryDataSource")
-    @ConfigurationProperties(prefix = "spring.datasource.primary")
-    public DataSource primaryDataSource() {
-        return DataSourceBuilder.create()
-                .type(HikariDataSource.class)
-                .build();
-    }
-
-    // Recommendations DataSource (для аналитики)
     @Bean(name = "recommendationsDataSource")
-    @ConfigurationProperties(prefix = "spring.datasource.recommendations")
+    @ConfigurationProperties(prefix = "spring.secondary.datasource")
     public DataSource recommendationsDataSource() {
         return DataSourceBuilder.create()
                 .type(HikariDataSource.class)
                 .build();
     }
 
-    // JdbcTemplate для Primary
+    // JdbcTemplate для Primary (JPA) - используем тот же DataSource из JpaConfiguration
     @Primary
     @Bean(name = "primaryJdbcTemplate")
     public JdbcTemplate primaryJdbcTemplate(
@@ -41,7 +30,7 @@ public class RecommendationsDataSourceConfiguration {
         return new JdbcTemplate(dataSource);
     }
 
-    // JdbcTemplate для Recommendations
+    // JdbcTemplate для Recommendations (аналитика)
     @Bean(name = "recommendationsJdbcTemplate")
     public JdbcTemplate recommendationsJdbcTemplate(
             @Qualifier("recommendationsDataSource") DataSource dataSource) {

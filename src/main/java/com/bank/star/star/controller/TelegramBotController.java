@@ -1,64 +1,92 @@
 package com.bank.star.star.controller;
 
-import com.bank.star.star.service.TelegramBotService;
-import org.springframework.http.ResponseEntity;
+import com.bank.star.star.DTO.ProductRecommendation;
+import com.bank.star.star.DTO.RecommendationResponse;
+import com.bank.star.star.service.RecommendationService;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/bot")
 public class TelegramBotController {
 
-    private final TelegramBotService telegramBotService;
+    private final RecommendationService recommendationService;
+    private final JdbcTemplate jdbcTemplate;
 
-    public TelegramBotController(TelegramBotService telegramBotService) {
-        this.telegramBotService = telegramBotService;
+    public TelegramBotController(RecommendationService recommendationService,
+                                 @Qualifier("recommendationsJdbcTemplate") JdbcTemplate jdbcTemplate) {
+        this.recommendationService = recommendationService;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @GetMapping("/help")
     public String getHelp() {
-        return telegramBotService.getHelpMessage();
+        return "Добро пожаловать в бот рекомендаций банка Star!\n\n" +
+                "Доступные команды:\n" +
+                "/recommend <имя пользователя> - получить персональные рекомендации\n\n" +
+                "Пример: /recommend sheron.berge\n\n" +
+                "Для получения рекомендаций вам нужно быть зарегистрированным пользователем нашего банка.";
     }
 
     @GetMapping("/recommend/{username}")
     public String getRecommendationsForUser(@PathVariable String username) {
-        return telegramBotService.getRecommendationsForUser(username);
-    }
+        try {
+            // Ищем пользователя по имени
+            String sql = "SELECT id FROM users WHERE username = ?";
+            List<String> userIds = jdbcTemplate.queryForList(sql, String.class, username);
 
-    @PostMapping("/webhook")
-    public ResponseEntity<?> handleWebhook(@RequestBody TelegramUpdate update) {
-        if (update.getMessage() != null && update.getMessage().getText() != null) {
-            String response = telegramBotService.processCommand(update.getMessage().getText());
-            return ResponseEntity.ok(new TelegramResponse(response));
+            if (userIds.isEmpty()) {
+                return "Пользователь не найден";
+            }
+
+            if (userIds.size() > 1) {
+                return "Найдено несколько пользователей с таким именем";
+            }
+
+            UUID userId = UUID.fromString(userIds.get(0));
+
+            // Получаем имя пользователя
+            String userSql = "SELECT first_name, last_name FROM users WHERE id = ?";
+            String userName = jdbcTemplate.query(
+                    userSql,
+                    rs -> {
+                        if (rs.next()) {
+                            String firstName = rs.getString("first_name");
+                            String lastName = rs.getString("last_name");
+                            return (firstName != null ? firstName : "") + " " +
+                                    (lastName != null ? lastName : "");
+                        }
+                        return "Пользователь";
+                    },
+                    userId.toString()  // конвертируем UUID в строку
+            );
+
+            // Получаем рекомендации
+            RecommendationResponse response = recommendationService.getRecommendations(userId);
+
+            // Форматируем ответ
+            StringBuilder message = new StringBuilder();
+            message.append("Здравствуйте, ").append(userName.trim()).append("!\n\n");
+            message.append("Новые продукты для вас:\n\n");
+
+            if (response.getRecommendations().isEmpty()) {
+                message.append("Пока нет персональных рекомендаций. Проверьте позже!");
+            } else {
+                int counter = 1;
+                for (ProductRecommendation recommendation : response.getRecommendations()) {
+                    message.append(counter++).append(". ").append(recommendation.getName()).append("\n");
+                    message.append("   ").append(recommendation.getText()).append("\n\n");
+                }
+            }
+
+            return message.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Произошла ошибка при обработке запроса: " + e.getMessage();
         }
-        return ResponseEntity.ok().build();
-    }
-
-    // Для тестирования через GET
-    @GetMapping("/process")
-    public String processCommand(@RequestParam String command) {
-        return telegramBotService.processCommand(command);
-    }
-
-    // DTO классы для Telegram API
-    static class TelegramUpdate {
-        private Message message;
-
-        public Message getMessage() { return message; }
-        public void setMessage(Message message) { this.message = message; }
-    }
-
-    static class Message {
-        private String text;
-
-        public String getText() { return text; }
-        public void setText(String text) { this.text = text; }
-    }
-
-    static class TelegramResponse {
-        private String text;
-
-        public TelegramResponse(String text) { this.text = text; }
-        public String getText() { return text; }
-        public void setText(String text) { this.text = text; }
     }
 }

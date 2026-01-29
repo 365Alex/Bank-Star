@@ -1,6 +1,8 @@
 package com.bank.star.star.controller;
+
 import com.bank.star.star.DTO.CreateDynamicRuleRequest;
 import com.bank.star.star.DTO.RuleStatsResponse;
+import com.bank.star.star.entity.RuleCondition;
 import com.bank.star.star.entity.RuleStatistic;
 import com.bank.star.star.model.DynamicRule;
 import com.bank.star.star.repository.DynamicRuleRepository;
@@ -20,9 +22,9 @@ public class RuleStatsController {
     private final RuleStatisticRepository ruleStatisticRepository;
     private final ObjectMapper objectMapper;
 
-    public  RuleStatsController (DynamicRuleRepository dynamicRuleRepository,
-                          RuleStatisticRepository ruleStatisticRepository,
-                          ObjectMapper objectMapper) {
+    public RuleStatsController(DynamicRuleRepository dynamicRuleRepository,
+                               RuleStatisticRepository ruleStatisticRepository,
+                               ObjectMapper objectMapper) {
         this.dynamicRuleRepository = dynamicRuleRepository;
         this.ruleStatisticRepository = ruleStatisticRepository;
         this.objectMapper = objectMapper;
@@ -36,11 +38,13 @@ public class RuleStatsController {
         rule.setProductName(request.getProductName());
         rule.setProductId(request.getProductId());
         rule.setProductText(request.getProductText());
-        rule.setIsActive(true);
+        rule.setIsActive(request.getIsActive() != null ? request.getIsActive() : true);
 
-        // Конвертируем rule в JSON
-        String ruleJson = objectMapper.writeValueAsString(request.getConditions());
-        rule.setRuleConditionsJson(ruleJson);
+        // Сохраняем условия как JSON в отдельное поле
+        if (request.getConditions() != null) {
+            String conditionsJson = objectMapper.writeValueAsString(request.getConditions());
+            rule.setConditionsJson(conditionsJson);
+        }
 
         DynamicRule saved = dynamicRuleRepository.save(rule);
 
@@ -57,7 +61,11 @@ public class RuleStatsController {
     public ResponseEntity<Void> deleteRule(@PathVariable String productId) {
         // Ищем правило по productId
         dynamicRuleRepository.findByProductId(productId)
-                .ifPresent(dynamicRuleRepository::delete);
+                .ifPresent(rule -> {
+                    dynamicRuleRepository.delete(rule);
+                    // Удаляем статистику при удалении правила
+                    ruleStatisticRepository.deleteById(rule.getId().toString());
+                });
         return ResponseEntity.noContent().build();
     }
 
@@ -74,5 +82,4 @@ public class RuleStatsController {
 
         return ResponseEntity.ok(new RuleStatsResponse(stats));
     }
-
 }

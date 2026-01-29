@@ -1,6 +1,7 @@
 package com.bank.star.star.controller;
 
 import com.bank.star.star.entity.QueryType;
+import com.bank.star.star.entity.RuleCondition;
 import com.bank.star.star.model.DynamicRule;
 import com.bank.star.star.repository.DynamicRuleRepository;
 import org.springframework.http.ResponseEntity;
@@ -53,7 +54,7 @@ public class DynamicRuleController {
                     existingRule.setProductId(updatedRule.getProductId());
                     existingRule.setProductText(updatedRule.getProductText());
                     existingRule.setIsActive(updatedRule.getIsActive());
-                    existingRule.setRuleConditionsJson(updatedRule.getRuleConditionsJson());
+                    existingRule.setConditions(updatedRule.getConditions());
                     return ResponseEntity.ok(dynamicRuleRepository.save(existingRule));
                 })
                 .orElse(ResponseEntity.notFound().build());
