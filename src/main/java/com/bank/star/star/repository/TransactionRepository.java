@@ -24,7 +24,7 @@ public class TransactionRepository {
     public boolean hasProduct(UUID userId, ProductType productType) {
         String sql = """
             SELECT COUNT(*) > 0
-            FROM transaction t
+            FROM transactions t
             JOIN product p ON t.product_id = p.id
             WHERE t.user_id = ? 
               AND p.type = ? 
@@ -46,7 +46,7 @@ public class TransactionRepository {
     public long getTransactionSum(UUID userId, ProductType productType, TransactionType transactionType) {
         String sql = """
             SELECT COALESCE(SUM(t.amount), 0)
-            FROM transaction t
+            FROM transactions t
             JOIN product p ON t.product_id = p.id
             WHERE t.user_id = ?
               AND p.type = ?
