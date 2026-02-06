@@ -2,6 +2,7 @@ package com.bank.star.star.controller;
 
 import com.bank.star.star.DTO.CreateDynamicRuleRequest;
 import com.bank.star.star.DTO.RuleStatsResponse;
+import com.bank.star.star.entity.RuleCondition;
 import com.bank.star.star.entity.RuleStatistic;
 import com.bank.star.star.model.DynamicRule;
 import com.bank.star.star.repository.DynamicRuleRepository;
@@ -11,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -30,39 +32,53 @@ public class RuleStatsController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createRule(@RequestBody CreateDynamicRuleRequest request)
+    public ResponseEntity<DynamicRule> createRule(@RequestBody CreateDynamicRuleRequest request)
             throws JsonProcessingException {
+
+        List<RuleCondition> conditions = new ArrayList<>();
+        if (request.getConditions() != null) {
+            for (CreateDynamicRuleRequest.ConditionDTO dto : request.getConditions()) {
+                RuleCondition condition = new RuleCondition(
+                        dto.getQuery(),
+                        dto.getArguments(),
+                        dto.getNegate() != null ? dto.getNegate() : false
+                );
+                conditions.add(condition);
+            }
+        }
 
         DynamicRule rule = new DynamicRule();
         rule.setProductName(request.getProductName());
         rule.setProductId(request.getProductId());
         rule.setProductText(request.getProductText());
         rule.setIsActive(request.getIsActive() != null ? request.getIsActive() : true);
-
-        // Сохраняем условия как JSON в отдельное поле
-        if (request.getConditions() != null) {
-            String conditionsJson = objectMapper.writeValueAsString(request.getConditions());
-            rule.setConditionsJson(conditionsJson);
-        }
+        rule.setConditions(conditions);
 
         DynamicRule saved = dynamicRuleRepository.save(rule);
+
+
+        RuleStatistic statistic = new RuleStatistic(
+                saved.getId().toString(),
+                saved.getProductName()
+        );
+        ruleStatisticRepository.save(statistic);
 
         return ResponseEntity.ok(saved);
     }
 
     @GetMapping
-    public ResponseEntity<?> getAllRules() {
+    public ResponseEntity<List<DynamicRule>> getAllRules() {
         List<DynamicRule> rules = dynamicRuleRepository.findAll();
         return ResponseEntity.ok().body(rules);
     }
 
     @DeleteMapping("/{productId}")
     public ResponseEntity<Void> deleteRule(@PathVariable String productId) {
-        // Ищем правило по productId
+
         dynamicRuleRepository.findByProductId(productId)
                 .ifPresent(rule -> {
                     dynamicRuleRepository.delete(rule);
-                    // Удаляем статистику при удалении правила
+
                     ruleStatisticRepository.deleteById(rule.getId().toString());
                 });
         return ResponseEntity.noContent().build();
