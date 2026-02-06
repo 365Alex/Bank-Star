@@ -2,7 +2,6 @@ package com.bank.star.star.controller;
 
 import com.bank.star.star.DTO.CreateDynamicRuleRequest;
 import com.bank.star.star.DTO.RuleStatsResponse;
-import com.bank.star.star.entity.RuleCondition;
 import com.bank.star.star.entity.RuleStatistic;
 import com.bank.star.star.model.DynamicRule;
 import com.bank.star.star.repository.DynamicRuleRepository;

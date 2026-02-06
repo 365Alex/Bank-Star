@@ -7,7 +7,10 @@ import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 import java.util.UUID;
-
+/**
+ * Правило для продукта "Invest 500".
+ * Проверяет условия для предложения инвестиционного счета.
+ */
 @Component
 public class Invest500Rule implements RecommendationRuleSet {
     private static final String PRODUCT_ID = "147f6a0f-3b91-413b-ab99-87f081d60d5a";

@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "rule_statistics")
+@Table(name = "RULE_STATISTICS")
 public class RuleStatistic {
 
     @Id
@@ -37,7 +37,6 @@ public class RuleStatistic {
         this.lastUpdated = LocalDateTime.now();
     }
 
-    // Геттеры и сеттеры
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 

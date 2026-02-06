@@ -1,5 +1,6 @@
 package com.bank.star.star.service;
 
+import com.bank.star.star.DTO.ProductRecommendation;
 import com.bank.star.star.DTO.RecommendationResponse;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -20,7 +21,7 @@ public class TelegramBotService {
         this.recommendationService = recommendationService;
         this.jdbcTemplate = jdbcTemplate;
 
-        // Инициализация базы при старте
+
         initializeDatabase();
     }
 
@@ -31,11 +32,11 @@ public class TelegramBotService {
             Integer tableCount = jdbcTemplate.queryForObject(checkTableSql, Integer.class);
 
             if (tableCount == null || tableCount == 0) {
-                System.out.println("Таблицы не найдены. Запустите приложение с data.sql файлом.");
+                System.out.println("Таблицы не найдены.");
             }
         } catch (Exception e) {
             System.err.println("База данных не инициализирована: " + e.getMessage());
-            System.err.println("Пожалуйста, создайте таблицы вручную или используйте data.sql");
+            System.err.println("Пожалуйста, создайте таблицы вручную");
         }
     }
 
@@ -62,18 +63,17 @@ public class TelegramBotService {
 
     public String getRecommendationsForUser(String username) {
         try {
-            // Сначала проверяем существование таблицы
+
             try {
                 jdbcTemplate.execute("SELECT 1 FROM users LIMIT 1");
             } catch (Exception e) {
                 return "❌ *Ошибка:* База данных не инициализирована.\n\n" +
                         "Таблица users не найдена. Пожалуйста:\n" +
                         "1. Откройте H2 Console: http://localhost:8080/h2-console\n" +
-                        "2. Подключитесь к базе: jdbc:h2:file:./data/recommendations\n" +
-                        "3. Создайте таблицы из data.sql файла";
+                        "2. Подключитесь к базе: jdbc:h2:file:./data/recommendations\n";
             }
 
-            // Ищем пользователя по имени
+
             String sql = "SELECT id FROM users WHERE username = ?";
             List<String> userIds = jdbcTemplate.queryForList(sql, String.class, username);
 
@@ -108,10 +108,10 @@ public class TelegramBotService {
                     userId
             );
 
-            // Получаем рекомендации
+
             RecommendationResponse response = recommendationService.getRecommendations(userId);
 
-            // Форматируем ответ
+
             StringBuilder message = new StringBuilder();
             message.append("👋 *Здравствуйте, ").append(userName.trim()).append("!*\n\n");
             message.append("🎯 *Персональные рекомендации для вас:*\n\n");
@@ -121,7 +121,7 @@ public class TelegramBotService {
                 message.append("Проверьте позже или обратитесь в отделение банка.");
             } else {
                 int counter = 1;
-                for (var recommendation : response.getRecommendations()) {
+                for (ProductRecommendation recommendation : response.getRecommendations()) {
                     message.append(counter++).append(". *").append(recommendation.getName()).append("*\n");
                     message.append("   📝 ").append(recommendation.getText()).append("\n");
                     message.append("   🆔 ID: `").append(recommendation.getId()).append("`\n\n");

@@ -7,7 +7,10 @@ import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 import java.util.UUID;
-
+/**
+ * Правило для продукта "Top Saving".
+ * Проверяет условия для предложения накопительного счета.
+ */
 @Component
 public class TopSavingRule implements RecommendationRuleSet {
     private static final String PRODUCT_ID = "59efc529-2fff-41af-baff-90ccd7402925";
@@ -22,19 +25,19 @@ public class TopSavingRule implements RecommendationRuleSet {
 
     @Override
     public Optional<ProductRecommendation> check(UUID userId) {
-        // Сначала проверяем обязательное условие
+
         if (!transactionRepository.hasProduct(userId, ProductType.DEBIT)) {
             return Optional.empty();
         }
 
         boolean isEligible =
-                // Правило 2: Пополнения DEBIT >= 50 000 ИЛИ Пополнения SAVING >= 50 000
+
                 (transactionRepository.transactionSumGreaterOrEqual(
                         userId, 50000, ProductType.DEBIT, TransactionType.DEPOSIT
                 ) || transactionRepository.transactionSumGreaterOrEqual(
                         userId, 50000, ProductType.SAVING, TransactionType.DEPOSIT
                 ))
-                        // Правило 3: Пополнения DEBIT больше расходов DEBIT
+
                         && transactionRepository.compareTransactionSums(
                         userId,
                         ProductType.DEBIT, TransactionType.DEPOSIT,

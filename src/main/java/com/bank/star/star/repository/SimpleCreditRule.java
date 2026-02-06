@@ -7,7 +7,10 @@ import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 import java.util.UUID;
-
+/**
+ * Правило для продукта "Простой кредит".
+ * Проверяет условия для предложения кредита.
+ */
 @Component
 public class SimpleCreditRule implements RecommendationRuleSet {
     private static final String PRODUCT_ID = "ab138afb-f3ba-4a93-b74f-0fcee86d447f";
@@ -23,15 +26,15 @@ public class SimpleCreditRule implements RecommendationRuleSet {
     @Override
     public Optional<ProductRecommendation> check(UUID userId) {
         boolean isEligible =
-                // Правило 1: Не использует кредитные продукты
+
                 !transactionRepository.hasProduct(userId, ProductType.CREDIT)
-                        // Правило 2: Пополнения DEBIT больше расходов DEBIT
+
                         && transactionRepository.compareTransactionSums(
                         userId,
                         ProductType.DEBIT, TransactionType.DEPOSIT,
                         ProductType.DEBIT, TransactionType.WITHDRAW
                 )
-                        // Правило 3: Расходы DEBIT больше 100 000 ₽
+
                         && transactionRepository.transactionSumCompare(
                         userId, 100000, ProductType.DEBIT, TransactionType.WITHDRAW
                 );

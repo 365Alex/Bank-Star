@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "dynamic_rules")
+@Table(name = "DYNAMIC_RULES")
 public class DynamicRule {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -43,15 +43,12 @@ public class DynamicRule {
         this.conditions = conditions;
     }
 
-    // Геттер/сеттер для JSON условий
     public String getConditionsJson() { return conditionsJson; }
     public void setConditionsJson(String conditionsJson) { this.conditionsJson = conditionsJson; }
 
-    // Добавляем геттер/сеттер для isActive
     public Boolean getIsActive() { return isActive; }
     public void setIsActive(Boolean isActive) { this.isActive = isActive; }
 
-    // Остальные геттеры/сеттеры
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
 

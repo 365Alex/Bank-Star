@@ -36,7 +36,7 @@ public class RecommendationService {
     public RecommendationResponse getRecommendations(UUID userId) {
         List<ProductRecommendation> recommendations = new ArrayList<>();
 
-        // 1. Проверяем статические правила
+
         for (RecommendationRuleSet rule : staticRules) {
             Optional<ProductRecommendation> recommendation = rule.check(userId);
             if (recommendation.isPresent()) {
@@ -45,10 +45,10 @@ public class RecommendationService {
             }
         }
 
-        // 2. Проверяем динамические правила
+
         List<DynamicRule> dynamicRules = dynamicRuleRepository.findAll();
         for (DynamicRule rule : dynamicRules) {
-            // Пропускаем неактивные правила
+
             if (rule.getIsActive() != null && !rule.getIsActive()) {
                 continue;
             }

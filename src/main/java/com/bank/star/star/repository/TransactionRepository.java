@@ -64,8 +64,11 @@ public class TransactionRepository {
     }
 
     /**
-     * Сравнивает сумму двух типов транзакций
-     * возвращает true если сумма первых транзакций больше суммы вторых транзакций
+     * Возвращает сумму транзакций в копейках для указанного типа продукта и операции.
+     * @param userId Идентификатор пользователя
+     * @param productType1, productType2 Тип банковского продукта
+     * @param transactionType1, transactionType2 Тип транзакции (пополнение/снятие)
+     * @return Сумма в копейках
      */
     public boolean compareTransactionSums(UUID userId,
                                           ProductType productType1, TransactionType transactionType1,
@@ -76,8 +79,12 @@ public class TransactionRepository {
     }
 
     /**
-     * Проверяет, что сумма транзакций превышает порог
-     * @param threshold порог в рублях (автоматически преобразуется в копейки)
+     * Проверяет, что сумма транзакций превышает пороговое значение.
+     * @param userId Идентификатор пользователя
+     * @param threshold Порог в рублях (автоматически конвертируется в копейки)
+     * @param productType Тип продукта
+     * @param transactionType Тип транзакции
+     * @return true если сумма превышает порог
      */
     public boolean transactionSumCompare(UUID userId, int threshold,
                                          ProductType productType, TransactionType transactionType) {

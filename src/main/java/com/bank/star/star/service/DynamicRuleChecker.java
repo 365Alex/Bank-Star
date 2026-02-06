@@ -31,7 +31,6 @@ public class DynamicRuleChecker {
         for (RuleCondition condition : rule.getConditions()) {
             boolean conditionResult = checkCondition(condition, userId);
 
-            // Если условие с negate=true, инвертируем результат
             if (condition.isNegate()) {
                 conditionResult = !conditionResult;
             }
@@ -99,12 +98,12 @@ public class DynamicRuleChecker {
                     com.bank.star.star.entity.ProductType.valueOf(arguments.get(0));
             int minAmount = Integer.parseInt(arguments.get(1));
 
-            // Проверяем, что сумма всех транзакций по продукту > minAmount
+
             long depositSum = transactionRepository.getDepositSum(userId, productType);
             long withdrawSum = transactionRepository.getWithdrawSum(userId, productType);
             long totalSum = depositSum + withdrawSum;
 
-            // Конвертируем рубли в копейки для сравнения
+
             return totalSum > (minAmount * 100L);
         } catch (Exception e) {
             return false;
@@ -146,7 +145,6 @@ public class DynamicRuleChecker {
             com.bank.star.star.entity.ProductType productType =
                     com.bank.star.star.entity.ProductType.valueOf(arguments.get(0));
 
-            // Сравниваем сумму пополнений и снятий
             return transactionRepository.compareTransactionSums(
                     userId,
                     productType, com.bank.star.star.entity.TransactionType.DEPOSIT,

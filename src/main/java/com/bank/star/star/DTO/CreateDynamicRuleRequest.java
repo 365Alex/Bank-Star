@@ -32,7 +32,6 @@ public class CreateDynamicRuleRequest {
         private List<String> arguments;
         private Boolean negate;
 
-        // Геттеры и сеттеры
         public QueryType getQuery() { return query; }
         public void setQuery(QueryType query) { this.query = query; }
 

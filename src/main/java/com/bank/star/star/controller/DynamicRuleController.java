@@ -1,7 +1,6 @@
 package com.bank.star.star.controller;
 
 import com.bank.star.star.entity.QueryType;
-import com.bank.star.star.entity.RuleCondition;
 import com.bank.star.star.model.DynamicRule;
 import com.bank.star.star.repository.DynamicRuleRepository;
 import org.springframework.http.ResponseEntity;

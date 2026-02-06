@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "rule_conditions")
+@Table(name = "RULE_CONDITIONS")
 public class RuleCondition {
 
     @Id
@@ -19,7 +19,7 @@ public class RuleCondition {
     private QueryType query;
 
     @ElementCollection
-    @CollectionTable(name = "rule_condition_arguments",
+    @CollectionTable(name = "RULE_CONDITION_ARGUMENTS",
             joinColumns = @JoinColumn(name = "condition_id"))
     @Column(name = "argument", nullable = false)
     private List<String> arguments = new ArrayList<>();
@@ -35,7 +35,6 @@ public class RuleCondition {
         this.negate = negate;
     }
 
-    // Геттеры и сеттеры
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

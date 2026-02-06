@@ -30,7 +30,6 @@ public class DynamicRecommendation {
         this.dynamicRuleSet = dynamicRuleSet;
     }
 
-    // Геттеры и сеттеры
     public String getId() {
         return id;
     }
