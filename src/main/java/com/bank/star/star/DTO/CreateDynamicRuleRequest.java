@@ -11,7 +11,6 @@ public class CreateDynamicRuleRequest {
     private Boolean isActive;
     private List<ConditionDTO> conditions;
 
-    // Геттеры и сеттеры
     public String getProductName() { return productName; }
     public void setProductName(String productName) { this.productName = productName; }
 
